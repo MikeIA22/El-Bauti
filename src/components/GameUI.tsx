@@ -261,7 +261,7 @@ export const GameUI: React.FC<GameUIProps> = ({
             <div className="w-full bg-neutral-950/70 rounded-2xl p-3 border border-white/10 flex items-center gap-3.5 mb-4 text-left">
               <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl overflow-hidden border-2 border-amber-500/50 shrink-0 bg-neutral-800">
                 <img
-                  src="/public/assets/aistudio/Captura_de_pantalla_2026-11-06_101049_32e528c8.png"
+                  src={`${import.meta.env.BASE_URL}assets/aistudio/Captura_de_pantalla_2026-11-06_101049_32e528c8.png`}
                   alt="Bauti"
                   className="w-full h-full object-cover object-top"
                 />
