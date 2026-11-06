@@ -1,0 +1,6 @@
+{
+  "name": "El Bauti - Carrera por Calle Laurel",
+  "description": "Juego 3D estilo Subway Surfers ambientado en la famosa Calle Laurel de Logroño con Bauti esquivando camareros, barricas y comensales.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
