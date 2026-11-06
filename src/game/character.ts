@@ -551,9 +551,9 @@ export class BautiCharacter {
       this.leftLeg.rotation.x = -Math.PI / 4;
       this.rightLeg.rotation.x = Math.PI / 5;
     } else if (state.isSliding) {
-      // Crouch and slide
-      this.torso.position.y = THREE.MathUtils.damp(this.torso.position.y, 0.45, 18, delta);
-      this.torso.rotation.x = THREE.MathUtils.damp(this.torso.rotation.x, 1.1, 18, delta);
+      // Crouch and slide low to the ground
+      this.torso.position.y = THREE.MathUtils.damp(this.torso.position.y, 0.38, 25, delta);
+      this.torso.rotation.x = THREE.MathUtils.damp(this.torso.rotation.x, 1.25, 25, delta);
       this.head.rotation.x = -0.7; // Keep looking forward while sliding
 
       // Arms back for balance
@@ -634,14 +634,14 @@ export class BautiCharacter {
     this.shadowMesh.scale.set(shadowScale, shadowScale, shadowScale);
     (this.shadowMesh.material as THREE.MeshBasicMaterial).opacity = Math.max(0.08, 0.35 - (posY * 0.05));
 
-    this.updateHitbox(this.group.position.x, this.group.position.y + posY);
+    this.updateHitbox(this.group.position.x, this.group.position.y + posY, state.isSliding);
   }
 
-  public updateHitbox(posX: number, posY: number) {
-    const isSliding = this.torso.rotation.x > 0.8;
-    const height = isSliding ? 0.85 : 1.85;
-    const halfWidth = 0.42;
-    const halfDepth = 0.42;
+  public updateHitbox(posX: number, posY: number, isSliding: boolean = false) {
+    const sliding = isSliding || this.torso.rotation.x > 0.6;
+    const height = sliding ? 0.52 : 1.80;
+    const halfWidth = 0.40;
+    const halfDepth = 0.40;
 
     this.collisionBox.min.set(posX - halfWidth, posY, this.group.position.z - halfDepth);
     this.collisionBox.max.set(posX + halfWidth, posY + height, this.group.position.z + halfDepth);

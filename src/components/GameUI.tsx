@@ -28,6 +28,7 @@ interface GameUIProps {
   onPause: () => void;
   onResume: () => void;
   onRestart: () => void;
+  onGoToMenu: () => void;
   onMoveLeft: () => void;
   onMoveRight: () => void;
   onJump: () => void;
@@ -43,6 +44,7 @@ export const GameUI: React.FC<GameUIProps> = ({
   onPause,
   onResume,
   onRestart,
+  onGoToMenu,
   onMoveLeft,
   onMoveRight,
   onJump,
@@ -103,6 +105,49 @@ export const GameUI: React.FC<GameUIProps> = ({
                 <span>Calle Laurel:</span>
                 <span className="font-semibold text-white tabular-nums">{stats.distance} m</span>
               </div>
+
+              {/* Active Power-ups Bar (Moved to top-left corner so middle is 100% unobstructed) */}
+              {activePowerUps.length > 0 && (
+                <div className="flex flex-col gap-1 mt-0.5">
+                  {activePowerUps.map((p) => {
+                    const percent = Math.max(0, Math.min(100, (p.remainingTime / p.duration) * 100));
+                    let colorClass = 'bg-emerald-500 text-emerald-300';
+                    let icon = <Sparkles className="w-3 h-3 text-emerald-400" />;
+                    let name = 'Super Salto';
+
+                    if (p.type === 'rioja') {
+                      colorClass = 'bg-rose-500 text-rose-300';
+                      icon = <Shield className="w-3 h-3 text-rose-400" />;
+                      name = 'Escudo Rioja';
+                    } else if (p.type === 'pincho') {
+                      colorClass = 'bg-amber-500 text-amber-300';
+                      icon = <Flame className="w-3 h-3 text-amber-400" />;
+                      name = 'Imán Tapas';
+                    }
+
+                    return (
+                      <div
+                        key={p.type}
+                        className="flex items-center gap-2 bg-neutral-950/85 backdrop-blur-md border border-white/10 px-2 py-0.5 rounded-lg shadow-md text-xs w-fit"
+                      >
+                        <div className="flex items-center gap-1 font-semibold text-white text-[10px] sm:text-[11px]">
+                          {icon}
+                          <span>{name}</span>
+                        </div>
+                        <div className="w-12 h-1.5 bg-neutral-800 rounded-full overflow-hidden border border-white/10">
+                          <div
+                            className={`h-full transition-all duration-100 ${colorClass}`}
+                            style={{ width: `${percent}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] font-mono text-neutral-300 tabular-nums">
+                          {p.remainingTime.toFixed(1)}s
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Center: Tapas & Rioja Counters */}
@@ -142,49 +187,6 @@ export const GameUI: React.FC<GameUIProps> = ({
               </button>
             </div>
           </div>
-
-          {/* Active Power-ups Bar */}
-          {activePowerUps.length > 0 && (
-            <div className="self-center flex flex-wrap gap-2 px-3 pointer-events-auto -mt-1 sm:-mt-2">
-              {activePowerUps.map((p) => {
-                const percent = Math.max(0, Math.min(100, (p.remainingTime / p.duration) * 100));
-                let colorClass = 'bg-emerald-500 border-emerald-400 text-emerald-200';
-                let icon = <Sparkles className="w-3.5 h-3.5" />;
-                let name = 'Super Salto';
-
-                if (p.type === 'rioja') {
-                  colorClass = 'bg-rose-600 border-rose-500 text-rose-200';
-                  icon = <Shield className="w-3.5 h-3.5" />;
-                  name = 'Escudo Rioja';
-                } else if (p.type === 'pincho') {
-                  colorClass = 'bg-amber-500 border-amber-400 text-amber-200';
-                  icon = <Flame className="w-3.5 h-3.5" />;
-                  name = 'Imán Tapas';
-                }
-
-                return (
-                  <div
-                    key={p.type}
-                    className="flex items-center gap-1.5 bg-neutral-900/90 backdrop-blur-md border border-white/15 px-2.5 py-1 rounded-full shadow-md text-xs"
-                  >
-                    <div className="flex items-center gap-1 font-semibold text-white text-[11px]">
-                      {icon}
-                      <span>{name}</span>
-                    </div>
-                    <div className="w-12 h-1.5 bg-neutral-800 rounded-full overflow-hidden border border-white/10">
-                      <div
-                        className={`h-full transition-all duration-100 ${colorClass}`}
-                        style={{ width: `${percent}%` }}
-                      />
-                    </div>
-                    <span className="text-[10px] font-mono text-neutral-300 tabular-nums">
-                      {p.remainingTime.toFixed(1)}s
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          )}
 
           {/* Mobile Ergonomic Thumb Controls (Subway Surfers Phone Mode) */}
           <div className="w-full max-w-lg mx-auto px-4 pb-4 pt-2 flex items-end justify-between pointer-events-auto">
@@ -292,8 +294,8 @@ export const GameUI: React.FC<GameUIProps> = ({
                   <div className="text-amber-400 text-[10px]">Esquivar carril</div>
                 </div>
                 <div className="bg-neutral-900/80 p-2 rounded-lg border border-white/5">
-                  <span className="text-base">🪵</span>
-                  <div className="font-bold text-white mt-0.5">Toldo de Bar</div>
+                  <span className="text-base">🛒</span>
+                  <div className="font-bold text-white mt-0.5">Cartel LIDL</div>
                   <div className="text-rose-400 text-[10px]">Rodar (Slide)</div>
                 </div>
               </div>
@@ -404,6 +406,13 @@ export const GameUI: React.FC<GameUIProps> = ({
               </button>
 
               <button
+                onClick={onGoToMenu}
+                className="w-full py-2.5 rounded-xl bg-neutral-800/80 text-neutral-400 text-xs font-medium hover:bg-neutral-700 hover:text-white transition flex items-center justify-center gap-2 border border-white/5"
+              >
+                <span>Ir al Menú Principal</span>
+              </button>
+
+              <button
                 onClick={toggleSound}
                 className="w-full py-2.5 rounded-xl bg-neutral-800 text-neutral-300 text-xs font-medium hover:bg-neutral-700 transition flex items-center justify-center gap-2 border border-white/5"
               >
@@ -491,10 +500,10 @@ export const GameUI: React.FC<GameUIProps> = ({
               </button>
 
               <button
-                onClick={onRestart}
-                className="w-full py-2.5 rounded-xl bg-neutral-800 text-neutral-300 text-xs font-semibold hover:bg-neutral-700 transition border border-white/5"
+                onClick={onGoToMenu}
+                className="w-full py-2.5 rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 hover:text-white text-xs font-semibold transition border border-white/10 active:scale-95 flex items-center justify-center gap-1.5"
               >
-                Ir al Menú Principal
+                <span>Ir al Menú Principal</span>
               </button>
             </div>
           </div>

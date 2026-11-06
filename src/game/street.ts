@@ -28,6 +28,7 @@ export class CalleLaurelStreet {
   // Authentic Bar Sign Textures
   private barSignTextures: THREE.CanvasTexture[] = [];
   private barrelLabelTexture: THREE.CanvasTexture;
+  private coinItemCounter: number = 0;
 
   constructor(scene: THREE.Scene) {
     this.scene = scene;
@@ -126,12 +127,12 @@ export class CalleLaurelStreet {
 
   private createBarSignTextures() {
     const bars = [
-      { name: 'BAR SORIANO', tapas: 'Especialidad Champiñones' },
-      { name: 'BAR LORENZO', tapas: 'Pinchos Morunos & Tío Agus' },
-      { name: 'BAR JUBERA', tapas: 'Patatas Bravas Riojanas' },
-      { name: 'TABERNA LAUREL', tapas: 'Vinos de Rioja y Tapas' },
-      { name: 'EL RINCÓN DEL VINO', tapas: 'Chiquitos & Cazuelitas' },
-      { name: 'BODEGA LOGROÑO', tapas: 'Crianza & Reserva' },
+      { name: 'LA TABERNA DEL BAUTI', tapas: 'Especialidad de la Casa' },
+      { name: 'BAR EL CHIQUITO', tapas: 'Vinos de Rioja y Cazuelitas' },
+      { name: 'BODEGA LA LAUREL', tapas: 'Crianza, Reserva y Tapas' },
+      { name: 'EL RINCÓN DE LA GAMBA', tapas: 'Champiñones y Pinchos' },
+      { name: 'MESÓN DEL TEMPRANILLO', tapas: 'Tablas de Jamón Ibérico' },
+      { name: 'BAR EL POTEO RIOJANO', tapas: 'Poteo de Sábado Noche' },
     ];
 
     bars.forEach((b) => {
@@ -140,26 +141,36 @@ export class CalleLaurelStreet {
       canvas.height = 140;
       const ctx = canvas.getContext('2d')!;
 
-      // Dark tavern wood board
-      ctx.fillStyle = '#1A120B';
+      // Dark matte tavern wood board
+      ctx.fillStyle = '#100B06';
       ctx.fillRect(0, 0, 512, 140);
 
-      // Gold ornate border
+      // 3D Relief carved gold border
       ctx.strokeStyle = '#D97706';
-      ctx.lineWidth = 6;
+      ctx.lineWidth = 8;
       ctx.strokeRect(6, 6, 500, 128);
-      ctx.lineWidth = 2;
-      ctx.strokeRect(14, 14, 484, 112);
+      ctx.strokeStyle = '#5B2909';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(12, 12, 488, 116);
 
-      // Bar name
-      ctx.font = 'bold 38px "Outfit", sans-serif';
-      ctx.fillStyle = '#FEF3C7';
+      // Bar name with 3D relief shadow (readable from 50m)
+      ctx.font = '900 44px "Outfit", sans-serif';
       ctx.textAlign = 'center';
+
+      // Deep 3D drop shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.95)';
+      ctx.fillText(b.name, 259, 66);
+      ctx.fillText(b.name, 258, 65);
+
+      // Main high-contrast bright cream text
+      ctx.fillStyle = '#FFFDF5';
       ctx.fillText(b.name, 256, 62);
 
-      // Specialty
-      ctx.font = '600 22px "Plus Jakarta Sans", sans-serif';
-      ctx.fillStyle = '#F59E0B';
+      // Tapas specialty
+      ctx.font = 'bold 22px "Plus Jakarta Sans", sans-serif';
+      ctx.fillStyle = '#000000';
+      ctx.fillText(b.tapas, 257, 107);
+      ctx.fillStyle = '#FBBF24';
       ctx.fillText(b.tapas, 256, 105);
 
       const tex = new THREE.CanvasTexture(canvas);
@@ -373,30 +384,57 @@ export class CalleLaurelStreet {
     wallMesh.receiveShadow = true;
     bar.add(wallMesh);
 
-    // 2. Open Bar Entrance (Recessed illuminated tavern interior)
+    // 2. Panoramic Glass Storefront & Bar Entrance (Doors are of transparent glass)
     const doorWidth = 4.8;
     const doorHeight = 3.8;
 
-    // Wooden doorframe
+    // Sleek black architectural frame
     const frameGeom = new THREE.BoxGeometry(0.5, doorHeight + 0.2, doorWidth + 0.4);
-    const doorFrame = new THREE.Mesh(frameGeom, this.darkWoodMat);
+    const doorFrame = new THREE.Mesh(frameGeom, this.ironMat);
     doorFrame.position.set(posX, (doorHeight + 0.2) / 2, posZ);
     bar.add(doorFrame);
 
-    // Glowing bar interior (lit back room with bottles)
+    // Large Double Glass Doors (Transparent glass panes with subtle blue-white tint)
+    const glassMat = new THREE.MeshStandardMaterial({
+      color: 0xEDF7FF,
+      transparent: true,
+      opacity: 0.35,
+      roughness: 0.05,
+      metalness: 0.15,
+    });
+    const glassPaneGeom = new THREE.BoxGeometry(0.08, doorHeight - 0.2, doorWidth - 0.2);
+    const glassDoors = new THREE.Mesh(glassPaneGeom, glassMat);
+    glassDoors.position.set(posX, doorHeight / 2, posZ);
+    bar.add(glassDoors);
+
+    // Central door mullion divider
+    const mullionGeom = new THREE.BoxGeometry(0.14, doorHeight, 0.12);
+    const mullion = new THREE.Mesh(mullionGeom, this.ironMat);
+    mullion.position.set(posX - sideSign * 0.05, doorHeight / 2, posZ);
+    bar.add(mullion);
+
+    // Polished Brass Vertical Door Handles (Tiradores dorados de cristalera)
+    const handleGeom = new THREE.CylinderGeometry(0.03, 0.03, 1.2, 8);
+    const leftHandle = new THREE.Mesh(handleGeom, this.goldMat);
+    leftHandle.position.set(posX - sideSign * 0.12, 1.8, posZ - 0.25);
+    const rightHandle = new THREE.Mesh(handleGeom, this.goldMat);
+    rightHandle.position.set(posX - sideSign * 0.12, 1.8, posZ + 0.25);
+    bar.add(leftHandle, rightHandle);
+
+    // Warm tavern interior visible directly through the glass doors
     const interiorGeom = new THREE.PlaneGeometry(doorWidth, doorHeight);
     interiorGeom.rotateY(-sideSign * Math.PI / 2);
     const interior = new THREE.Mesh(interiorGeom, this.tavernInteriorMat);
-    interior.position.set(posX + sideSign * 0.25, doorHeight / 2, posZ);
+    interior.position.set(posX + sideSign * 0.4, doorHeight / 2, posZ);
     bar.add(interior);
 
-    // Wooden bar counter visible at the entrance
+    // Bar counter visible through the glass
     const counterGeom = new THREE.BoxGeometry(0.8, 1.1, doorWidth * 0.85);
     const barCounter = new THREE.Mesh(counterGeom, this.darkWoodMat);
-    barCounter.position.set(posX + sideSign * 0.1, 0.55, posZ);
+    barCounter.position.set(posX + sideSign * 0.2, 0.55, posZ);
     bar.add(barCounter);
 
-    // 3. Wooden Awning with Tavern Sign
+    // 3. Wooden Awning with 3D Relief Anti-Glare Bar Sign
     // Slanted tavern awning (toldo)
     const awningGeom = new THREE.BoxGeometry(1.4, 0.12, doorWidth + 1.2);
     awningGeom.rotateZ(sideSign * 0.25);
@@ -404,12 +442,33 @@ export class CalleLaurelStreet {
     awning.position.set(posX - sideSign * 0.55, doorHeight + 0.6, posZ);
     bar.add(awning);
 
-    // Tavern Signboard
-    const signGeom = new THREE.BoxGeometry(0.12, 1.3, doorWidth);
-    const signMat = new THREE.MeshStandardMaterial({ map: signTex, roughness: 0.4 });
+    // 3D Relief Bar Signboard:
+    // Anti-glare matte finish (roughness: 1.0, zero metalness) with warm emissive self-illumination
+    // Angled slightly downwards (8 deg) so overhead street lights reflect away from camera
+    const signGroup = new THREE.Group();
+    signGroup.position.set(posX - sideSign * 0.25, doorHeight + 1.35, posZ);
+
+    // Outer 3D wooden carved frame projecting forward
+    const signFrameGeom = new THREE.BoxGeometry(0.22, 1.45, doorWidth + 0.2);
+    const signFrame = new THREE.Mesh(signFrameGeom, this.darkWoodMat);
+    signGroup.add(signFrame);
+
+    // Raised 3D sign plate with zero specular glare
+    const signGeom = new THREE.BoxGeometry(0.16, 1.32, doorWidth);
+    const signMat = new THREE.MeshStandardMaterial({
+      map: signTex,
+      roughness: 1.0,     // Absolutely zero specular reflections/glare
+      metalness: 0.0,
+      emissive: 0x3A2412, // Subtle warm self-illumination for crisp contrast from afar
+      emissiveIntensity: 0.4,
+    });
     const signMesh = new THREE.Mesh(signGeom, signMat);
-    signMesh.position.set(posX - sideSign * 0.15, doorHeight + 1.3, posZ);
-    bar.add(signMesh);
+    signMesh.position.x = -sideSign * 0.04; // Extrude forward in relief
+    signGroup.add(signMesh);
+
+    // Subtle downward tilt to steer specular reflection down to pavement
+    signGroup.rotation.z = sideSign * 0.14;
+    bar.add(signGroup);
 
     // 4. Balconies with Geraniums on upper floors
     const balconyGeom = new THREE.BoxGeometry(1.0, 0.9, 3.2);
@@ -430,10 +489,7 @@ export class CalleLaurelStreet {
     lantern.position.set(posX - sideSign * 0.25, doorHeight + 0.3, posZ + doorWidth / 2 + 0.4);
     bar.add(lantern);
 
-    // 6. Barrels parked on the sidewalk outside the bar
-    const sidewalkBarrel = this.createRealisticOakBarrel();
-    sidewalkBarrel.position.set(posX - sideSign * 0.7, 0, posZ - doorWidth / 2 - 0.7);
-    bar.add(sidewalkBarrel);
+    // Decorative sidewalk barrels removed to avoid any confusion with lane obstacles
 
     return bar;
   }
@@ -442,14 +498,13 @@ export class CalleLaurelStreet {
 
   /**
    * Builds an instantly recognizable authentic Oak Wine Barrel (Barrica de Rioja)
+   * with a wooden tapas board and two glasses of Rioja red wine on top
    */
   public createRealisticOakBarrel(): THREE.Group {
     const barrel = new THREE.Group();
 
     // Curved bulging wooden barrel body
-    // Using a cylinder with middle bulge
     const bodyGeom = new THREE.CylinderGeometry(0.48, 0.48, 1.15, 16);
-    // Expand middle vertices slightly for authentic barrel bulge
     const pos = bodyGeom.attributes.position;
     for (let i = 0; i < pos.count; i++) {
       const y = pos.getY(i);
@@ -483,7 +538,7 @@ export class CalleLaurelStreet {
     tap.position.set(0, 0.58, 0.58);
     barrel.add(tap);
 
-    // Stenciled RIOJA Label plaque on the barrel top
+    // Stenciled RIOJA Label plaque on the barrel
     const labelGeom = new THREE.PlaneGeometry(0.42, 0.22);
     const labelMat = new THREE.MeshStandardMaterial({
       map: this.barrelLabelTexture,
@@ -492,6 +547,41 @@ export class CalleLaurelStreet {
     const labelMesh = new THREE.Mesh(labelGeom, labelMat);
     labelMesh.position.set(0, 0.85, 0.54);
     barrel.add(labelMesh);
+
+    // Tapas Board on top of the barrel (Plato de pinchos)
+    const boardGeom = new THREE.CylinderGeometry(0.34, 0.34, 0.035, 14);
+    const boardMesh = new THREE.Mesh(boardGeom, this.darkWoodMat);
+    boardMesh.position.set(0, 1.165, 0);
+    barrel.add(boardMesh);
+
+    // 2 Pinchos / Tapas on the board
+    const pincho1 = new THREE.Mesh(
+      new THREE.BoxGeometry(0.12, 0.08, 0.12),
+      new THREE.MeshStandardMaterial({ color: 0xB91C1C }) // Paprika chorizo / pincho
+    );
+    pincho1.position.set(-0.1, 1.21, 0.05);
+
+    const pincho2 = new THREE.Mesh(
+      new THREE.BoxGeometry(0.12, 0.08, 0.12),
+      new THREE.MeshStandardMaterial({ color: 0xF59E0B }) // Tortilla / queso
+    );
+    pincho2.position.set(0.1, 1.21, 0.05);
+
+    // Toothpicks in pinchos
+    const stickGeom = new THREE.CylinderGeometry(0.01, 0.01, 0.14, 4);
+    const stick1 = new THREE.Mesh(stickGeom, new THREE.MeshBasicMaterial({ color: 0xD7B899 }));
+    stick1.position.set(-0.1, 1.28, 0.05);
+    const stick2 = new THREE.Mesh(stickGeom, new THREE.MeshBasicMaterial({ color: 0xD7B899 }));
+    stick2.position.set(0.1, 1.28, 0.05);
+
+    // 2 Copas de Vino de Rioja on top of the barrel
+    const glass1 = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.045, 0.16, 8), this.wineRedMat);
+    glass1.position.set(-0.14, 1.24, -0.16);
+
+    const glass2 = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.045, 0.16, 8), this.wineRedMat);
+    glass2.position.set(0.14, 1.24, -0.16);
+
+    barrel.add(pincho1, pincho2, stick1, stick2, glass1, glass2);
 
     return barrel;
   }
@@ -579,43 +669,128 @@ export class CalleLaurelStreet {
   }
 
   /**
-   * Builds a Low Tavern Awning / Sign with hanging cured hams (requires slide under)
+   * Builds the hanging LIDL obstacle:
+   * Clean bright yellow board with physical 3D navy blue block letters spelling "LIDL".
+   * Requires Bauti to roll/slide underneath.
    */
-  public createBarAwningObstacle(): THREE.Group {
+  public createLidlSignObstacle(): THREE.Group {
     const group = new THREE.Group();
 
-    // Wooden crossbeam across the lane
-    const beamGeom = new THREE.BoxGeometry(2.2, 0.22, 0.28);
-    const beam = new THREE.Mesh(beamGeom, this.darkWoodMat);
-    beam.position.y = 1.65;
+    // Overhead steel mounting beam spanning across the lane
+    const beamGeom = new THREE.BoxGeometry(2.3, 0.16, 0.16);
+    const beam = new THREE.Mesh(beamGeom, this.steelMat);
+    beam.position.y = 2.52;
     group.add(beam);
 
-    // Hanging chalkboard sign
-    const signBoardGeom = new THREE.BoxGeometry(1.6, 0.65, 0.08);
-    const signBoard = new THREE.Mesh(
-      signBoardGeom,
-      new THREE.MeshStandardMaterial({ color: 0x18181B, roughness: 0.6 })
-    );
-    signBoard.position.set(0, 1.35, 0);
-    group.add(signBoard);
-
-    // Hanging chains from top
-    const chainGeom = new THREE.CylinderGeometry(0.02, 0.02, 0.8, 4);
+    // Hanging steel chains
+    const chainGeom = new THREE.CylinderGeometry(0.02, 0.02, 0.58, 4);
     const leftChain = new THREE.Mesh(chainGeom, this.ironMat);
-    leftChain.position.set(-0.7, 2.05, 0);
+    leftChain.position.set(-0.7, 2.18, 0);
     const rightChain = new THREE.Mesh(chainGeom, this.ironMat);
-    rightChain.position.set(0.7, 2.05, 0);
+    rightChain.position.set(0.7, 2.18, 0);
     group.add(leftChain, rightChain);
 
-    // Hanging Jamón Serrano on the side
-    const jamonGeom = new THREE.CylinderGeometry(0.07, 0.14, 0.6, 8);
-    const jamon = new THREE.Mesh(
-      jamonGeom,
-      new THREE.MeshStandardMaterial({ color: 0x881337, roughness: 0.5 })
-    );
-    jamon.position.set(0.65, 0.95, 0);
-    group.add(jamon);
+    // LIDL Sign Board Group centered at Y = 1.72 (bottom edge at Y = 1.11m)
+    const signGroup = new THREE.Group();
+    signGroup.position.set(0, 1.72, 0);
 
+    // Outer Navy Blue Frame / Border
+    const frameGeom = new THREE.BoxGeometry(1.92, 1.22, 0.09);
+    const frameMat = new THREE.MeshStandardMaterial({
+      color: 0x001B44,
+      roughness: 0.5,
+      metalness: 0.1,
+    });
+    const frameMesh = new THREE.Mesh(frameGeom, frameMat);
+    signGroup.add(frameMesh);
+
+    // Clean Bright Yellow Board
+    const yellowBoardGeom = new THREE.BoxGeometry(1.82, 1.12, 0.12);
+    const yellowBoardMat = new THREE.MeshStandardMaterial({
+      color: 0xFFD200,
+      roughness: 0.35,
+      metalness: 0.05,
+    });
+    const yellowBoard = new THREE.Mesh(yellowBoardGeom, yellowBoardMat);
+    signGroup.add(yellowBoard);
+
+    // Top mounting eye-bolts connecting chains to the yellow board
+    const eyeGeom = new THREE.TorusGeometry(0.05, 0.015, 6, 12);
+    [-0.7, 0.7].forEach((hx) => {
+      const eye = new THREE.Mesh(eyeGeom, this.ironMat);
+      eye.position.set(hx, 0.59, 0);
+      signGroup.add(eye);
+    });
+
+    // 3D Navy Blue Relief Block Letters: L I D L
+    // Material: Solid navy blue with crisp specular highlights
+    const letterMat = new THREE.MeshStandardMaterial({
+      color: 0x002868,
+      roughness: 0.3,
+      metalness: 0.1,
+    });
+
+    // Helper to generate physical 3D block letters
+    // isFront: facing approaching player (looking from -Z to +Z)
+    const addLidlLetters = (zOffset: number, isFront: boolean) => {
+      const textGroup = new THREE.Group();
+      textGroup.position.z = zOffset;
+
+      // Coordinate multiplier: when facing -Z, +X is visual screen left
+      // When facing +Z, -X is visual screen left
+      const dir = isFront ? 1 : -1;
+      const letterZ = 0.06; // letter extrusion depth
+
+      // --- Letter 1: 'L' (Screen Left) ---
+      const l1X = 0.52 * dir;
+      // Vertical spine
+      const l1Spine = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.60, letterZ), letterMat);
+      l1Spine.position.set(l1X + 0.07 * dir, 0, 0);
+      // Horizontal bottom foot extending inward
+      const l1Foot = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, letterZ), letterMat);
+      l1Foot.position.set(l1X - 0.01 * dir, -0.24, 0);
+      textGroup.add(l1Spine, l1Foot);
+
+      // --- Letter 2: 'I' ---
+      const iX = 0.17 * dir;
+      const iBar = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.60, letterZ), letterMat);
+      iBar.position.set(iX, 0, 0);
+      textGroup.add(iBar);
+
+      // --- Letter 3: 'D' ---
+      const dX = -0.17 * dir;
+      // Left vertical straight bar
+      const dSpine = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.60, letterZ), letterMat);
+      dSpine.position.set(dX + 0.09 * dir, 0, 0);
+      // Top horizontal bar
+      const dTop = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.11, letterZ), letterMat);
+      dTop.position.set(dX - 0.01 * dir, 0.245, 0);
+      // Bottom horizontal bar
+      const dBottom = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.11, letterZ), letterMat);
+      dBottom.position.set(dX - 0.01 * dir, -0.245, 0);
+      // Right vertical upright
+      const dRight = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.44, letterZ), letterMat);
+      dRight.position.set(dX - 0.11 * dir, 0, 0);
+      textGroup.add(dSpine, dTop, dBottom, dRight);
+
+      // --- Letter 4: 'L' (Screen Right) ---
+      const l2X = -0.52 * dir;
+      // Vertical spine
+      const l2Spine = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.60, letterZ), letterMat);
+      l2Spine.position.set(l2X + 0.07 * dir, 0, 0);
+      // Horizontal bottom foot extending inward
+      const l2Foot = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.12, letterZ), letterMat);
+      l2Foot.position.set(l2X - 0.01 * dir, -0.24, 0);
+      textGroup.add(l2Spine, l2Foot);
+
+      signGroup.add(textGroup);
+    };
+
+    // Add 3D letters to both front face (approaching player) and back face
+    addLidlLetters(-0.065, true);  // Facing player (-Z)
+    addLidlLetters(0.065, false);  // Facing away (+Z)
+
+    group.add(signGroup);
     return group;
   }
 
@@ -632,7 +807,7 @@ export class CalleLaurelStreet {
         'TERRACE_TABLE',
         'OAK_BARREL',
         'TERRACE_TABLE',
-        'BAR_AWNING',
+        'LIDL_SIGN',
         'DOUBLE_BARRELS',
       ];
 
@@ -717,12 +892,13 @@ export class CalleLaurelStreet {
         break;
       }
 
+      case 'LIDL_SIGN':
       case 'BAR_AWNING': {
-        group = this.createBarAwningObstacle();
+        group = this.createLidlSignObstacle();
         group.position.set(laneX, 0, z);
         halfW = 1.05;
-        minY = 0.85; // Can roll under!
-        maxY = 2.1;
+        minY = 1.05; // Elevated clearance: Standing (1.8m) hits, but sliding (0.55m) passes under!
+        maxY = 2.35;
         halfD = 0.35;
         break;
       }
@@ -752,10 +928,42 @@ export class CalleLaurelStreet {
 
     switch (type) {
       case 'coin': {
-        const coinGeom = new THREE.CylinderGeometry(0.32, 0.32, 0.08, 16);
-        coinGeom.rotateX(Math.PI / 2);
-        const coin = new THREE.Mesh(coinGeom, this.goldMat);
-        group.add(coin);
+        // Alternating rows: Pincho de Champiñones vs Copa de Vino Tinto de Rioja
+        const isWine = (this.coinItemCounter++ % 2 === 1);
+
+        if (isWine) {
+          // Copa de Vino Tinto de Rioja
+          const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.08, 0.28, 10), this.wineRedMat);
+          const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.22, 6), this.glassMat);
+          stem.position.y = -0.22;
+          const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.025, 8), this.glassMat);
+          foot.position.y = -0.32;
+          group.add(bowl, stem, foot);
+        } else {
+          // Pincho de Champiñones a la Plancha de Calle Laurel
+          const stick = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.015, 0.015, 0.58, 6),
+            new THREE.MeshStandardMaterial({ color: 0xD7B899 })
+          );
+          group.add(stick);
+
+          for (let i = 0; i < 3; i++) {
+            const cap = new THREE.Mesh(
+              new THREE.SphereGeometry(0.16 - i * 0.015, 8, 6, 0, Math.PI * 2, 0, Math.PI / 2),
+              new THREE.MeshStandardMaterial({ color: 0xFDFBF7, roughness: 0.5 })
+            );
+            cap.position.y = -0.12 + i * 0.13;
+            group.add(cap);
+          }
+
+          // Green garlic-parsley herb sprinkle
+          const herb = new THREE.Mesh(
+            new THREE.BoxGeometry(0.08, 0.02, 0.08),
+            new THREE.MeshBasicMaterial({ color: 0x16A34A })
+          );
+          herb.position.y = 0.22;
+          group.add(herb);
+        }
         break;
       }
 

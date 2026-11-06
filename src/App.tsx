@@ -158,6 +158,12 @@ export default function App() {
     }
   }, []);
 
+  const handleGoToMenu = useCallback(() => {
+    if (engineRef.current) {
+      engineRef.current.goToMenu();
+    }
+  }, []);
+
   const handleMoveLeft = useCallback(() => {
     engineRef.current?.moveLeft();
   }, []);
@@ -196,6 +202,7 @@ export default function App() {
         onPause={handlePause}
         onResume={handleResume}
         onRestart={handleRestart}
+        onGoToMenu={handleGoToMenu}
         onMoveLeft={handleMoveLeft}
         onMoveRight={handleMoveRight}
         onJump={handleJump}

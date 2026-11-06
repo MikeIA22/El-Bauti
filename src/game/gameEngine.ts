@@ -60,6 +60,10 @@ export class GameEngine {
   // Active Power-ups
   private activePowerUps: Map<PowerUpType, PowerUpState> = new Map();
 
+  // Night Sky (Moon & Stars)
+  private moonGroup!: THREE.Group;
+  private starPoints!: THREE.Points;
+
   // Particle System
   private particleGroup: THREE.Group;
   private particles: {
@@ -114,22 +118,22 @@ export class GameEngine {
 
     // Scene & Camera
     this.scene = new THREE.Scene();
-    this.scene.background = new THREE.Color('#1E1E2E'); // Twilight evening sky
-    this.scene.fog = new THREE.FogExp2('#1E1E2E', 0.015); // Distance fade
+    this.scene.background = new THREE.Color('#0A0F1D'); // Saturday night tapas sky in Logroño
+    this.scene.fog = new THREE.FogExp2('#0A0F1D', 0.012); // Atmospheric evening haze
 
     this.camera = new THREE.PerspectiveCamera(
       60,
       this.container.clientWidth / this.container.clientHeight,
       0.1,
-      120
+      140
     );
 
     // Studio Environment (per Three.js guidelines)
     this.pmremGenerator = new THREE.PMREMGenerator(this.renderer);
     this.scene.environment = this.pmremGenerator.fromScene(new RoomEnvironment(), 0.04).texture;
 
-    // Lighting Rig (Key Warm Street Light + Cool Fill)
-    const keyLight = new THREE.DirectionalLight('#FEF3C7', 1.8);
+    // Lighting Rig (Key Warm Street Light + Cool Fill + Moon Light)
+    const keyLight = new THREE.DirectionalLight('#FEF3C7', 1.6);
     keyLight.position.set(6, 14, -8);
     keyLight.castShadow = !this.isSoftwareGl;
     keyLight.shadow.mapSize.width = 1024;
@@ -143,8 +147,11 @@ export class GameEngine {
     keyLight.shadow.bias = -0.0005;
     this.scene.add(keyLight);
 
-    const hemiLight = new THREE.HemisphereLight('#FEF08A', '#1E293B', 0.7);
+    const hemiLight = new THREE.HemisphereLight('#FEF08A', '#0A0F1D', 0.65);
     this.scene.add(hemiLight);
+
+    // Night Sky Rig (Luminous Full Moon & Starfield)
+    this.createNightSky();
 
     // Particle Group
     this.particleGroup = new THREE.Group();
@@ -189,17 +196,172 @@ export class GameEngine {
     this.renderer.setSize(width, height);
   };
 
+  private createNightSky() {
+    // 1. Luminous Full Moon
+    this.moonGroup = new THREE.Group();
+
+    // Procedural lunar texture canvas
+    const moonCanvas = document.createElement('canvas');
+    moonCanvas.width = 256;
+    moonCanvas.height = 256;
+    const mctx = moonCanvas.getContext('2d')!;
+
+    // Silvery pearlescent base
+    mctx.fillStyle = '#F8F6F0';
+    mctx.fillRect(0, 0, 256, 256);
+
+    // Lunar maria & crater textures
+    const craters = [
+      { x: 90, y: 80, r: 35, a: 0.16 },
+      { x: 155, y: 110, r: 42, a: 0.20 },
+      { x: 80, y: 160, r: 38, a: 0.18 },
+      { x: 170, y: 175, r: 28, a: 0.14 },
+      { x: 125, y: 135, r: 25, a: 0.22 },
+      { x: 130, y: 65, r: 18, a: 0.14 },
+    ];
+    craters.forEach((c) => {
+      const grad = mctx.createRadialGradient(c.x, c.y, c.r * 0.2, c.x, c.y, c.r);
+      grad.addColorStop(0, `rgba(165, 175, 190, ${c.a})`);
+      grad.addColorStop(1, 'rgba(248, 246, 240, 0)');
+      mctx.fillStyle = grad;
+      mctx.beginPath();
+      mctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+      mctx.fill();
+    });
+
+    const moonTex = new THREE.CanvasTexture(moonCanvas);
+    moonTex.colorSpace = THREE.SRGBColorSpace;
+
+    const moonGeom = new THREE.SphereGeometry(3.8, 24, 24);
+    const moonMat = new THREE.MeshBasicMaterial({
+      map: moonTex,
+      color: 0xFFFDF2,
+    });
+    const moonMesh = new THREE.Mesh(moonGeom, moonMat);
+    this.moonGroup.add(moonMesh);
+
+    // Moon Atmospheric Glow Halo
+    const glowCanvas = document.createElement('canvas');
+    glowCanvas.width = 128;
+    glowCanvas.height = 128;
+    const gctx = glowCanvas.getContext('2d')!;
+    const glowGrad = gctx.createRadialGradient(64, 64, 12, 64, 64, 64);
+    glowGrad.addColorStop(0, 'rgba(255, 250, 220, 0.75)');
+    glowGrad.addColorStop(0.35, 'rgba(180, 215, 255, 0.25)');
+    glowGrad.addColorStop(1, 'rgba(10, 15, 29, 0)');
+    gctx.fillStyle = glowGrad;
+    gctx.fillRect(0, 0, 128, 128);
+
+    const glowTex = new THREE.CanvasTexture(glowCanvas);
+    const glowMat = new THREE.MeshBasicMaterial({
+      map: glowTex,
+      transparent: true,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const glowMesh = new THREE.Mesh(new THREE.PlaneGeometry(18, 18), glowMat);
+    glowMesh.position.z = -0.1;
+    this.moonGroup.add(glowMesh);
+
+    this.moonGroup.position.set(5, 26, 85);
+    this.scene.add(this.moonGroup);
+
+    // Soft silvery moonlight directional light
+    const moonLight = new THREE.DirectionalLight('#DDE5FF', 0.6);
+    moonLight.position.set(5, 28, 85);
+    this.scene.add(moonLight);
+
+    // 2. Twinkling Starfield across the night sky
+    const starCount = 550;
+    const starGeom = new THREE.BufferGeometry();
+    const starPositions = new Float32Array(starCount * 3);
+    const starColors = new Float32Array(starCount * 3);
+
+    for (let i = 0; i < starCount; i++) {
+      starPositions[i * 3] = (Math.random() - 0.5) * 90;
+      starPositions[i * 3 + 1] = 15 + Math.random() * 38;
+      starPositions[i * 3 + 2] = (Math.random() - 0.2) * 140;
+
+      const roll = Math.random();
+      if (roll < 0.6) {
+        starColors[i * 3] = 0.95;
+        starColors[i * 3 + 1] = 0.95;
+        starColors[i * 3 + 2] = 1.0;
+      } else if (roll < 0.85) {
+        starColors[i * 3] = 1.0;
+        starColors[i * 3 + 1] = 0.92;
+        starColors[i * 3 + 2] = 0.75;
+      } else {
+        starColors[i * 3] = 0.78;
+        starColors[i * 3 + 1] = 0.88;
+        starColors[i * 3 + 2] = 1.0;
+      }
+    }
+
+    starGeom.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    starGeom.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+
+    const starMat = new THREE.PointsMaterial({
+      size: 0.38,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.9,
+    });
+
+    this.starPoints = new THREE.Points(starGeom, starMat);
+    this.scene.add(this.starPoints);
+  }
+
   private setMenuPose() {
     this.gameState = 'MENU';
     this.playerX = 0;
     this.playerY = 0;
     this.playerZ = 0;
+    this.currentLane = 1;
+    this.targetX = 0;
+    this.velocityY = 0;
+    this.isGrounded = true;
+    this.isSliding = false;
+    this.slideTimer = 0;
     this.character.group.position.set(0, 0, 0);
     this.character.group.rotation.set(0, 0, 0);
+
+    if (this.moonGroup) {
+      this.moonGroup.position.set(4, 25, 75);
+    }
+    if (this.starPoints) {
+      this.starPoints.position.set(0, 0, 0);
+    }
 
     // Menu camera: slightly low-angle cinematic framing on Bauti with his thumbs up!
     this.camera.position.set(0, 1.4, -2.8);
     this.camera.lookAt(0, 1.15, 0);
+  }
+
+  public goToMenu() {
+    this.gameState = 'MENU';
+    this.callbacks.onStateChange('MENU');
+    audioManager.stopMusic();
+    this.street.reset();
+    this.activePowerUps.clear();
+    this.callbacks.onPowerUpUpdate([]);
+
+    // Clear particles
+    for (const p of this.particles) {
+      this.particleGroup.remove(p.mesh);
+    }
+    this.particles = [];
+
+    this.setMenuPose();
+    this.callbacks.onStatsUpdate({
+      score: 0,
+      distance: 0,
+      coins: this.coins,
+      tapas: this.tapas,
+      wineGlasses: this.wineGlasses,
+      highScore: this.highScore,
+      multiplier: 1,
+    });
   }
 
   public setDifficulty(mode: 'easy' | 'normal' | 'hard') {
@@ -439,6 +601,15 @@ export class GameEngine {
     // Look slightly ahead of Bauti down Calle Laurel
     this.camera.lookAt(this.playerX * 0.2, this.playerY * 0.5 + (isPortrait ? 1.35 : 1.2), this.playerZ + 8);
 
+    // Night Sky (Moon and Starfield move along with player to remain high in the sky)
+    if (this.moonGroup) {
+      this.moonGroup.position.z = this.playerZ + 85;
+      this.moonGroup.position.x = 5 + (this.playerX * 0.1);
+    }
+    if (this.starPoints) {
+      this.starPoints.position.z = this.playerZ;
+    }
+
     // 8. Update Street Generation & Collectibles
     this.street.update(
       this.playerZ,
@@ -531,6 +702,11 @@ export class GameEngine {
         pBox.min.z <= hb.maxZ;
 
       if (intersects) {
+        // Overhead obstacle (LIDL sign or tavern awning): if Bauti is rolling/sliding near the pavement, pass safely under!
+        if ((obs.type === 'LIDL_SIGN' || obs.type === 'BAR_AWNING') && this.isSliding && this.playerY < 0.45) {
+          continue;
+        }
+
         // If Rioja shield is active, smash through obstacle!
         if (this.activePowerUps.has('rioja')) {
           this.street.removeObstacle(obs.id);

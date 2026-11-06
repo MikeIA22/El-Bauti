@@ -19,7 +19,7 @@ export const JUMP_VELOCITY = 13.5;
 export const GRAVITY = 36;
 export const SUPER_JUMP_VELOCITY = 22;
 
-export const SLIDE_DURATION = 0.75; // seconds
+export const SLIDE_DURATION = 0.85; // seconds (generous slide window to dodge under signs)
 export const CHUNK_LENGTH = 36; // length of each Calle Laurel street chunk
 export const NUM_ACTIVE_CHUNKS = 5;
 
@@ -44,6 +44,7 @@ export type ObstacleType =
   | 'OAK_BARREL'       // Realistic Oak wine barrel (can jump or dodge)
   | 'TERRACE_TABLE'    // High tapas bar table with 2 bar stools and wine bottle (dodge)
   | 'DOUBLE_BARRELS'   // 2 oak barrels together (dodge or super jump)
+  | 'LIDL_SIGN'        // Iconic blue and yellow LIDL hanging sign (must slide/roll under)
   | 'BAR_AWNING';      // Low wooden tavern awning with hanging sign (slide/roll under)
 
 export interface ObstacleInstance {
